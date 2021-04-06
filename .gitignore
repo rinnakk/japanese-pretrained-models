@@ -4,6 +4,10 @@ log/
 .DS_Store
 */__MACOSX/
 
+# Exclude tokenizer data
+!data/tokenizer/google_sp.vocab
+!data/tokenizer/google_sp.model
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

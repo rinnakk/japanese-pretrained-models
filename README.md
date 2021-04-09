@@ -3,7 +3,13 @@
 
 ![rinna-icon](./rinna.png)
 
-This repository provides the code for training Japanese GPT-2 models. This code has been used for producing [japanese-gpt2-medium](https://huggingface.co/rinna/japanese-gpt2-medium) released by [rinna](https://corp.rinna.co.jp/).
+This repository provides the code for training Japanese GPT-2 models. This code has been used for producing [japanese-gpt2-medium released on  HuggingFace model hub](https://huggingface.co/rinna/japanese-gpt2-medium) by [rinna](https://corp.rinna.co.jp/).
+
+---
+
+**Please open an issue (in English/日本語) if you encounter any problem using the code or using our models via Huggingface.**
+
+---
 
 ## Train a Japanese GPT-2 from scratch on your own machine
 

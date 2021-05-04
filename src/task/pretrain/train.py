@@ -82,6 +82,12 @@ def train(local_rank, config):
     global_rank = config.node_rank * config.n_gpus + local_rank
     print(f"local rank: {[local_rank]}, global_rank: {[global_rank]}")
 
+    # set random seeds
+    torch.manual_seed(config.seed)
+    torch.cuda.manual_seed_all(config.seed)
+    random.seed(config.seed)
+    np.random.seed(config.seed)
+
     # multi-gpu init
     if torch.cuda.is_available():
         if config.world_size > 1:
@@ -481,12 +487,6 @@ if __name__ == "__main__":
     config.world_size = config.n_gpus * config.n_nodes
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = config.master_port
-
-    # set random seeds
-    torch.manual_seed(config.seed)
-    torch.cuda.manual_seed_all(config.seed)
-    random.seed(config.seed)
-    np.random.seed(config.seed)
 
     # run multi-processes
     if config.world_size > 1:

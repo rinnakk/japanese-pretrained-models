@@ -214,7 +214,7 @@ def train(local_rank, config):
             n_step = checkpoint["n_step"]
             start_n_epoch = checkpoint["n_epoch"]
             start_train_file_idx = checkpoint["start_train_file_idx"]
-            best_ppl = getattr(checkpoint, "best_ppl", float("inf"))
+            best_ppl = checkpoint.get("best_ppl", float("inf"))
         else:
             n_step = 0
             start_n_epoch = 0

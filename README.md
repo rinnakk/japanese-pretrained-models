@@ -1,5 +1,7 @@
 
-# japanese-pretraining-models (previously: japanese-gpt2)
+# japanese-pretrained-models 
+
+## (previously: japanese-gpt2)
 
 ![rinna-icon](./rinna.png)
 

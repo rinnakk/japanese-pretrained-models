@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 import torch
 import torch.cuda.amp as amp
-from transformers import GPT2LMHeadModel, PretrainedConfig
+from transformers import GPT2LMHeadModel, GPT2Config
 from transformers import T5Tokenizer
 
 
@@ -16,11 +16,10 @@ def str2bool(v):
 def interact(config):
 
     # multi-gpu init
-    if torch.cuda.is_available():
+    if torch.cuda.is_available() and config.use_gpu:
         DEVICE = torch.device("cuda")
     else:
         DEVICE = torch.device("cpu")
-    DEVICE = "cpu"
     print("Using", DEVICE)
 
     # build tokenizer
@@ -39,7 +38,7 @@ def interact(config):
     )
 
     # build model
-    model_config = PretrainedConfig.from_json_file(config.model_config_filepath)
+    model_config = GPT2Config.from_json_file(config.model_config_filepath)
     model = GPT2LMHeadModel(model_config)
     model = model.to(DEVICE)
     model.eval()
@@ -48,7 +47,7 @@ def interact(config):
     if config.checkpoint_path:
         print("----- Checkpoint loaded -----")
         print("checkpoint path: {}".format(config.checkpoint_path))
-        checkpoint = torch.load(config.checkpoint_path, map_location=DEVICE)
+        checkpoint = torch.load(config.checkpoint_path, map_location=model.device)
         print("loading model state dict...")
         model.load_state_dict(checkpoint["model"])
         model.tie_weights()  # NOTE: don't forget to tie weights after loading weights
@@ -66,7 +65,7 @@ def interact(config):
             # convert query to model inputs
             prompt_tokens = tokenizer.tokenize(prompt_text)
             prompt_token_ids = tokenizer.convert_tokens_to_ids(prompt_tokens)
-            prompt_tensor = torch.LongTensor(prompt_token_ids).to(DEVICE)
+            prompt_tensor = torch.LongTensor(prompt_token_ids).to(model.device)
             prompt_tensor = prompt_tensor.view(1, -1)
 
             # model forward
@@ -77,7 +76,7 @@ def interact(config):
                     top_p=config.top_p,
                     top_k=config.top_k,
                     temperature=config.temp,
-                    do_sample=True,
+                    do_sample=config.do_sample,
                     early_stopping=True,
                     bos_token_id=tokenizer.bos_token_id,
                     eos_token_id=tokenizer.eos_token_id,
@@ -108,12 +107,14 @@ def interact(config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--model_config_filepath", type=str, default="model/gpt2-ja-medium-config.json")
+    parser.add_argument("--model_config_filepath", type=str, default="model/gpt2-ja-small-config.json")
     parser.add_argument("--seed", type=int, default=42, help="random initialization seed")
     parser.add_argument("--max_gen_seq_len", type=int, default=200)
     parser.add_argument("--temp", type=float, default=1.0, help="temperature for decoding")
-    parser.add_argument("--top_k", type=int, default=0)
+    parser.add_argument("--top_k", type=int, default=40)
     parser.add_argument("--top_p", type=float, default=0.95)
+    parser.add_argument("--do_sample", type=str2bool, default=True)
+    parser.add_argument("--use_gpu", type=str2bool, default=True, help="use gpu or not")
     parser.add_argument("--checkpoint_path", help="path to saved checkpoint file")
     
     config = parser.parse_args()

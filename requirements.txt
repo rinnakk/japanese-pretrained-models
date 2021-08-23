@@ -4,3 +4,5 @@ tensorflow
 tensorboard
 sentencepiece
 tqdm
+fugashi
+unidic

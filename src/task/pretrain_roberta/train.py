@@ -1,3 +1,4 @@
+import math
 import random
 import time
 import argparse
@@ -14,15 +15,14 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import RandomSampler
 from torch.utils.data.distributed import DistributedSampler
-from transformers import GPT2LMHeadModel, PretrainedConfig
+from transformers import RobertaForMaskedLM, PretrainedConfig
 from transformers import T5Tokenizer
 
-from task.pretrain.data_source import DataSource, collate_fn
+from task.pretrain_roberta.data_source import DataSource, collate_fn
 from task.helpers import StatisticsReporter
 from optimization.lr_scheduler import get_linear_schedule_with_warmup
 
-
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+TASK = "pretrain_roberta"
 
 
 def str2bool(v):
@@ -53,27 +53,74 @@ def load_docs_from_filepath(filepath, tokenizer):
     return docs
 
 
-def forward_step(model, tokenizer, batch_data):
+def construct_data(tokenizer, seqs, mask_prob, device):
+    batch_size = len(seqs)
+    max_seq_len = max([len(seq) for seq in seqs])
+
     # padding input sequences
-    max_seq_len = max([len(seq) for seq in batch_data])
-    batch_data = [seq + [tokenizer.pad_token_id]*(max_seq_len-len(seq)) for seq in batch_data]
+    seqs = [seq + [tokenizer.pad_token_id]*(max_seq_len-len(seq)) for seq in seqs]
 
     # convert to tensors
-    batch_tensor = torch.LongTensor(batch_data).to(DEVICE)
+    seqs = torch.LongTensor(seqs)
 
-    # get inputs and outputs
-    input_ids = batch_tensor[:, :-1].contiguous()
-    output_ids = batch_tensor[:, 1:].contiguous()
+    # get mask token masks
+    special_token_masks = torch.zeros(seqs.size()).bool()
+    for special_token_id in [tokenizer.pad_token_id, tokenizer.cls_token_id]:
+        special_token_masks = special_token_masks | (seqs == special_token_id)
+    # sample mask token masks
+    mask_token_probs = torch.FloatTensor([mask_prob]).expand_as(seqs)  # [batch_size, max_seq_len]
+    mask_token_probs = mask_token_probs.masked_fill(special_token_masks, 0.0)
+    while True:  # prevent that there is not any mask token
+        mask_token_masks = torch.bernoulli(mask_token_probs).bool()
+        if (mask_token_masks.long().sum(1) == 0).sum() == 0:
+            break
+
+    # input ids
+    input_ids = seqs.clone()
+    input_ids[mask_token_masks] = tokenizer.mask_token_id
+
+    # output ids
+    output_ids = seqs.clone()
+    output_ids[~mask_token_masks] = tokenizer.pad_token_id
+
+    # position ids
+    position_ids = [list(range(max_seq_len))] * batch_size
+    position_ids = torch.LongTensor(position_ids)
+
+    # attention masks
+    attn_masks = (input_ids != tokenizer.pad_token_id).float()
+
+    return {
+        "input_ids": input_ids.to(device),
+        "output_ids": output_ids.to(device),
+        "position_ids": position_ids.to(device),
+        "attn_masks": attn_masks.to(device)
+    }
+
+
+def forward_step(model, tokenizer, batch_data, mask_prob):
+    data_dict = construct_data(tokenizer, batch_data, mask_prob, model.device)
+    
+    input_ids = data_dict["input_ids"]
+    output_ids = data_dict["output_ids"]
+    position_ids = data_dict["position_ids"]
+    attn_masks = data_dict["attn_masks"]
     
     # forward
-    gpt2_outputs = model(input_ids=input_ids, return_dict=True)
+    model_outputs = model(
+        input_ids=input_ids,
+        position_ids=position_ids,
+        attention_mask=attn_masks,
+        return_dict=True
+    )
     loss = F.cross_entropy(
-        gpt2_outputs["logits"].view(-1, len(tokenizer)),
+        model_outputs["logits"].view(-1, len(tokenizer)),
         output_ids.view(-1),
         ignore_index=tokenizer.pad_token_id,
         reduction="mean"
     )
-    ppl = loss.exp()
+    with torch.no_grad():
+        ppl = loss.exp()
 
     return loss, ppl
 
@@ -124,9 +171,11 @@ def train(local_rank, config):
     dev_reporter = StatisticsReporter()
 
     # get data filepaths
-    train_filepaths = []
-    dev_filepaths = []
+    corpus2train_filepaths = {}
+    corpus2dev_filepaths = {}
     for corpus in config.corpora:
+        corpus2train_filepaths[corpus] = []
+        corpus2dev_filepaths[corpus] = []
         if corpus == "jp_cc100":
             from corpus.jp_cc100.config import Config
             corpus_config = Config()
@@ -139,21 +188,79 @@ def train(local_rank, config):
             )))
             for file_idx, filepath in enumerate(corpus_filepaths):
                 if file_idx == dev_file_idx:
-                    dev_filepaths.append(f"{corpus_config.doc_data_dir}/{corpus_filepaths[file_idx]}")
+                    corpus2dev_filepaths[corpus].append(f"{corpus_config.doc_data_dir}/{corpus_filepaths[file_idx]}")
                 else:
-                    train_filepaths.append(f"{corpus_config.doc_data_dir}/{corpus_filepaths[file_idx]}")
+                    corpus2train_filepaths[corpus].append(f"{corpus_config.doc_data_dir}/{corpus_filepaths[file_idx]}")
 
-            if config.small_data:
-                train_filepaths = train_filepaths[:2]
+        elif corpus == "jp_wiki":
+            from corpus.jp_wiki.config import Config
+            corpus_config = Config()
+
+            dev_file_idx = None  # we want to learn all Wikipedia docs
+            
+            corpus_filepaths = sorted(list(filter(
+                lambda x: x.endswith(".txt"),
+                os.listdir(corpus_config.doc_data_dir)
+            )))
+            for file_idx, filepath in enumerate(corpus_filepaths):
+                if file_idx == dev_file_idx:
+                    corpus2dev_filepaths[corpus].append(f"{corpus_config.doc_data_dir}/{corpus_filepaths[file_idx]}")
+                else:
+                    corpus2train_filepaths[corpus].append(f"{corpus_config.doc_data_dir}/{corpus_filepaths[file_idx]}")
+
+    # get filepaths for training data
+    train_filepaths = []
+    if config.balanced_corpora is None:
+        for filepaths in corpus2train_filepaths.values():
+            train_filepaths += filepaths
+        random.shuffle(train_filepaths)
+    elif config.balanced_corpora == "undersample":
+        min_n_files = min([len(filepaths) for filepaths in corpus2train_filepaths.values()])
+        for filepaths in corpus2train_filepaths.values():
+            train_filepaths += filepaths[:min_n_files]
+        random.shuffle(train_filepaths)
+    elif config.balanced_corpora == "oversample":
+        max_n_files = max([len(filepaths) for filepaths in corpus2train_filepaths.values()])
+        for filepaths in corpus2train_filepaths.values():
+            over_sample_times = math.ceil(max_n_files / len(filepaths))
+            oversampled_filepaths = []
+            for _ in range(over_sample_times):
+                oversampled_filepaths += filepaths
+            train_filepaths += oversampled_filepaths[:max_n_files]
+        random.shuffle(train_filepaths)
+    elif config.balanced_corpora == "custom_ratio":
+        corpus2ratio = {"jp_cc100": 1, "jp_wiki": 5}
+        custom_ratio_filepaths = []
+        for corpus, filepaths in corpus2train_filepaths.items():
+            ratio = corpus2ratio[corpus]
+            custom_ratio_filepaths += filepaths * ratio
+        train_filepaths = custom_ratio_filepaths
+        random.shuffle(train_filepaths)
+    else:
+        raise Exception(f"Unknown corpora balancing strategy: {config.balanced_corpora}")
+        
+    if config.small_data:
+        train_filepaths = train_filepaths[:2]
+
+    # get filepaths for dev data
+    dev_filepaths = []
+    for filepaths in corpus2dev_filepaths.values():
+        dev_filepaths += filepaths
+
+    mp_print(f"Number of training files: {len(train_filepaths)}", global_rank)
+    mp_print(f"Number of dev files: {len(dev_filepaths)}", global_rank)
 
     # load dev data
     if global_rank == 0:
         dev_docs = []
         for dev_filepath in dev_filepaths:
             dev_docs += load_docs_from_filepath(dev_filepath, tokenizer)
+        
+        random.shuffle(dev_docs)
         dev_docs = dev_docs[:10000]
+
         mp_print("----- Loading dev data -----", global_rank)
-        dev_data_source = DataSource(config, tokenizer, dev_docs, "dev", randomize=False)
+        dev_data_source = DataSource(config, tokenizer, dev_docs, "dev")
         mp_print(str(dev_data_source.statistics), global_rank)
         dev_dataloader = torch.utils.data.DataLoader(
             dev_data_source,
@@ -165,14 +272,14 @@ def train(local_rank, config):
 
     # build model
     model_config = PretrainedConfig.from_json_file(config.model_config_filepath)
-    model = GPT2LMHeadModel(model_config)
+    model = RobertaForMaskedLM(model_config)
     model = model.to(DEVICE)
 
     # load model from checkpoint
     if config.checkpoint_path:
         mp_print("----- Checkpoint loaded -----", global_rank)
         mp_print("checkpoint path: {}".format(config.checkpoint_path), global_rank)
-        checkpoint = torch.load(config.checkpoint_path, map_location=DEVICE)
+        checkpoint = torch.load(config.checkpoint_path, map_location=model.device)
         mp_print("loading model state dict...", global_rank)
         model.load_state_dict(checkpoint["model"])
         model.tie_weights()  # NOTE: don't forget to tie weights after loading weights
@@ -185,14 +292,26 @@ def train(local_rank, config):
     if config.world_size > 1:
         model = DDP(
             model, 
-            device_ids=[local_rank],
-            find_unused_parameters=True
+            device_ids=[local_rank]
         )
 
     # build optimizer
+    param_optimizer = list(model.named_parameters())
+    no_decay = ['bias', 'LayerNorm']   # no decay for bias and LayerNorm (ln)
+    optimizer_grouped_parameters = [
+        {
+            'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
+            'weight_decay': config.l2_penalty},
+        {
+            'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 
+            'weight_decay': 0.0
+        }
+    ]
     optimizer = optim.AdamW(
-        model.parameters(),
+        optimizer_grouped_parameters,
         lr=config.init_lr,
+        betas=(0.9, 0.98),
+        eps=1e-6,
         weight_decay=config.l2_penalty
     )
 
@@ -222,6 +341,7 @@ def train(local_rank, config):
             best_ppl = float("inf")
         OUTPUT_FILEID = checkpoint["output_fileid"]
         del checkpoint
+        torch.cuda.empty_cache()
     else:
         n_step = 0
         start_n_epoch = 0
@@ -229,7 +349,7 @@ def train(local_rank, config):
         best_ppl = float("inf")
 
         # names
-        OUTPUT_FILEID = "gpt2-ja-{}.seed_{}.{}".format(
+        OUTPUT_FILEID = "roberta-ja-{}.seed_{}.{}".format(
             config.model_size,
             config.seed,
             time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime())
@@ -241,15 +361,15 @@ def train(local_rank, config):
     def mlog(s):
         if global_rank == 0:
             if config.enable_log:
-                if not os.path.exists("../log/pretrain"):
-                    os.makedirs("../log/pretrain")
-                with open(f"../log/pretrain/{OUTPUT_FILEID}.log", "a+", encoding="utf-8") as log_f:
+                if not os.path.exists(f"../log/{TASK}"):
+                    os.makedirs(f"../log/{TASK}")
+                with open(f"../log/{TASK}/{OUTPUT_FILEID}.log", "a+", encoding="utf-8") as log_f:
                     log_f.write(s+"\n")
             mp_print(s, global_rank)
     if config.enable_log:
         if global_rank == 0:
             tb_writer = SummaryWriter(
-                log_dir=f"../log/pretrain/{OUTPUT_FILEID}",
+                log_dir=f"../log/{TASK}/{OUTPUT_FILEID}",
                 max_queue=5
             )
 
@@ -271,7 +391,7 @@ def train(local_rank, config):
                 )
                 train_docs = [doc for docs in group_train_docs for doc in docs]
 
-            train_data_source = DataSource(config, tokenizer, train_docs, "train", randomize=True)
+            train_data_source = DataSource(config, tokenizer, train_docs, "train")
             mp_print(str(train_data_source.statistics), global_rank)
             # single gpu or cpu
             if config.world_size == 1 or not torch.cuda.is_available():
@@ -315,11 +435,8 @@ def train(local_rank, config):
 
                 # forward
                 model.train()
-                if config.use_amp:
-                    with amp.autocast():
-                        loss, ppl = forward_step(model, tokenizer, batch_data)
-                else:
-                    loss, ppl = forward_step(model, tokenizer, batch_data)
+                with amp.autocast():
+                    loss, ppl = forward_step(model, tokenizer, batch_data, config.mask_prob)
 
                 # update statisitcs
                 trn_reporter.update_data({"ppl": ppl.item(), "loss": loss.item()})
@@ -376,11 +493,8 @@ def train(local_rank, config):
                             eval_model = model
 
                         for eval_batch_idx, eval_batch_data in enumerate(dev_dataloader):
-                            if config.use_amp:
-                                with amp.autocast():
-                                    loss, ppl = forward_step(eval_model, tokenizer, eval_batch_data)
-                            else:
-                                loss, ppl = forward_step(eval_model, tokenizer, eval_batch_data)
+                            with amp.autocast():
+                                loss, ppl = forward_step(eval_model, tokenizer, eval_batch_data, config.mask_prob)
                             dev_reporter.update_data({"ppl": ppl.item(), "loss": loss.item()})
 
                             if eval_batch_idx == len(dev_dataloader) - 1:
@@ -392,8 +506,8 @@ def train(local_rank, config):
 
                     # Save model if it has better monitor measurement
                     if config.save_model:
-                        if not os.path.exists("../data/model/pretrain"):
-                            os.makedirs("../data/model/pretrain")
+                        if not os.path.exists(f"../data/model/{TASK}"):
+                            os.makedirs(f"../data/model/{TASK}")
 
                         model_to_save = model.module if hasattr(model, 'module') else model
 
@@ -410,9 +524,9 @@ def train(local_rank, config):
                         }
                         torch.save(
                             checkpoint,
-                            f"../data/model/pretrain/{OUTPUT_FILEID}.checkpoint"
+                            f"../data/model/{TASK}/{OUTPUT_FILEID}.checkpoint"
                         )
-                        mlog(f"checkpoint saved to data/model/pretrain/{OUTPUT_FILEID}.checkpoint")
+                        mlog(f"checkpoint saved to data/model/{TASK}/{OUTPUT_FILEID}.checkpoint")
 
                         # save best model
                         cur_ppl = dev_reporter.get_value("ppl")
@@ -421,18 +535,19 @@ def train(local_rank, config):
 
                             torch.save(
                                 checkpoint,
-                                f"../data/model/pretrain/{OUTPUT_FILEID}.best.checkpoint"
+                                f"../data/model/{TASK}/{OUTPUT_FILEID}.best.checkpoint"
                             )
-                            mlog(f"best checkpoint saved to data/model/pretrain/{OUTPUT_FILEID}.best.checkpoint")
+                            mlog(f"best checkpoint saved to data/model/{TASK}/{OUTPUT_FILEID}.best.checkpoint")
 
                     if config.enable_log:
                         for k, v in dev_reporter.items():
                             tb_writer.add_scalar(f"{k}/dev", np.mean(v), n_step)
 
                     dev_reporter.clear()
+                    torch.cuda.empty_cache()
 
                 # decay learning rate
-                lr_scheduler.step(dev_reporter.get_value("ppl"))
+                lr_scheduler.step()
 
         # reset starting training file index for every epoch (if might be set to a larger value if resuming from a checkpoint)
         start_train_file_idx = 0
@@ -442,20 +557,22 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # modeling
-    parser.add_argument("--model_size", type=str, default="medium", help="for naming")
-    parser.add_argument("--model_config_filepath", type=str, default="model/gpt2-ja-medium-config.json", help="path to model config file")
+    parser.add_argument("--model_size", type=str, default="base", help="for naming")
+    parser.add_argument("--model_config_filepath", type=str, default="model/roberta-ja-base-config.json", help="path to model config file")
     
     # training
     parser.add_argument("--seed", type=int, default=42, help="random initialization seed")
-    parser.add_argument("--batch_size", type=int, default=3, help="batch size for training")
-    parser.add_argument("--eval_batch_size", type=int, default=6, help="batch size for evaluation")
+    parser.add_argument("--batch_size", type=int, default=32, help="batch size for training. 32 for base.")
+    parser.add_argument("--eval_batch_size", type=int, default=32, help="batch size for evaluation")
     parser.add_argument("--n_train_files_per_group", type=int, default=10, help="number of files to load for every loading")
-    parser.add_argument("--n_training_steps", type=int, default=1e7, help="number of maximum training steps")
+    parser.add_argument("--n_training_steps", type=int, default=3e6, help="number of maximum training steps. 3e6 for base.")
     parser.add_argument("--n_epochs", type=int, default=10, help="number of maximum training epochs")
-    parser.add_argument("--n_warmup_steps", type=int, default=2e3, help="number of warmup steps")
+    parser.add_argument("--n_warmup_steps", type=int, default=1e4, help="number of warmup steps. 1e4 for base.")
+    parser.add_argument("--balanced_corpora", type=str, help="use the same number of files for each training corpus when there are multiple corpora. In [None, 'undersample', 'oversample', 'custom_ratio'].")
     parser.add_argument("--small_data", type=str2bool, default=False, help="use a small portion of data for bugging")
-    parser.add_argument("--max_seq_len", type=int, default=1024, help="maximum input sequence length")
-    parser.add_argument("--n_accum_steps", type=int, default=5, help="number of gradient accumulation steps")
+    parser.add_argument("--max_seq_len", type=int, default=512, help="maximum input sequence length")
+    parser.add_argument("--n_accum_steps", type=int, default=16, help="number of gradient accumulation steps. 16 for base.")
+    parser.add_argument("--mask_prob", type=float, default=0.15, help="probability of masking a token")
 
     # multi-gpu
     parser.add_argument("--n_nodes", type=int, default=1, help="number of nodes; See pytorch DDP tutorial for details")
@@ -468,11 +585,11 @@ if __name__ == "__main__":
 
     # optimizer
     parser.add_argument("--l2_penalty", type=float, default=0.01, help="l2 penalty")
-    parser.add_argument("--init_lr", type=float, default=1.5e-4, help="peak learning rate")
+    parser.add_argument("--init_lr", type=float, default=6e-4, help="peak learning rate")
     parser.add_argument("--max_grad_norm", type=float, default=1.0, help="gradient clipping threshold")
 
     # management
-    parser.add_argument("--corpora", type=str, nargs="+", default=["jp_cc100"], help="training corpora")
+    parser.add_argument("--corpora", type=str, nargs="+", default=["jp_cc100", "jp_wiki"], help="training corpora")
     parser.add_argument("--checkpoint_path", help="path to saved checkpoint file")
     parser.add_argument("--resume_training", type=str2bool, default=False, help="resume training from checkpoint or not")
     parser.add_argument("--enable_log", type=str2bool, default=False, help="save training log or not")

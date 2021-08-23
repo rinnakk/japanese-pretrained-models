@@ -1,7 +1,6 @@
 import argparse
 import random
 
-import torch
 import torch.cuda.amp as amp
 from transformers import AutoModelForCausalLM, TFAutoModelForCausalLM
 from transformers import T5Tokenizer

@@ -13,6 +13,7 @@
     "n_ctx": 1024,
     "n_embd": 1024,
     "n_head": 16,
+    "n_inner": 4096,
     "n_layer": 24,
     "n_positions": 1024,
     "resid_pdrop": 0.1,
@@ -27,6 +28,5 @@
         "max_length": 50
       }
     },
-    "vocab_size": 32000,
-    "n_inner": 4096
+    "vocab_size": 32000
 }

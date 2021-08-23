@@ -1,7 +1,7 @@
 import os
 from tqdm import tqdm
 
-from corpus.jp_cc100.config import Config
+from corpus.jp_wiki.config import Config
 
 config = Config()
 N_LINES_PER_FILE = 1e6
@@ -14,7 +14,7 @@ if __name__ == "__main__":
     output_file = open(f"{config.doc_data_dir}/{output_file_id}.txt", "w+", encoding="utf-8")
     cur_n_lines = 0
 
-    with open(f"{config.raw_data_dir}/ja.txt", "r", encoding="utf-8") as input_file:
+    with open(f"{config.extracted_data_path}", "r", encoding="utf-8") as input_file:
         with tqdm() as pbar:
             for line in input_file:
                 line = line.strip()

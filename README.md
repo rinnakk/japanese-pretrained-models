@@ -15,6 +15,22 @@ Currently supported pretrained models include: [GPT-2](https://d4mucfpksywv.clou
 
 ---
 
+## Update log
+
+* 2021/08/26 **\[Important\]** Updated license from the MIT license to the Apache 2.0 license due to the use of the Wikipedia pre-processing code from [cl-tohoku/bert-japanese](https://github.com/cl-tohoku/bert-japanese). See [issue](https://github.com/rinnakk/japanese-pretrained-models/issues/1) for details.
+
+* 2021/08/23 Added Japanese Wikipedia to training corpora. Published code for training `rinna/japanese-gpt2-small`, `rinna/japanese-gpt2-xsmall`, and `rinna/japanese-roberta-base`.
+
+* 2021/08/18 Changed repo name from `japanese-gpt2` to `japanese-pretrained-models`
+
+* 2021/06/15 Fixed best PPL tracking bug when using a checkpoint.
+
+* 2021/05/04 Fixed random seeding bug for Multi-GPU training.
+
+* 2021/04/06 Published code for training `rinna/japanese-gpt2-medium`.
+
+---
+
 ## Use our pretrained models via Huggingface
 
 ### Model summary
@@ -202,4 +218,4 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python -m task.pretrain_roberta.train \
 
 ## License
 
-[The MIT license](https://opensource.org/licenses/MIT)
+[The Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0)

@@ -72,7 +72,7 @@ tokens = tokenizer.tokenize(text)
 print(tokens)  # output: ['[CLS]', '▁4', '年に', '1', '度', 'オリンピック', 'は', '開かれる', '。']']
 
 # mask a token
-masked_idx = 6
+masked_idx = 5
 tokens[masked_idx] = tokenizer.mask_token
 print(tokens)  # output: ['[CLS]', '▁4', '年に', '1', '度', '[MASK]', 'は', '開かれる', '。']
 

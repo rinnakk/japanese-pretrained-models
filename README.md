@@ -17,7 +17,9 @@ Currently supported pretrained models include: [GPT-2](https://d4mucfpksywv.clou
 
 ## Update log
 
-* 2021/08/26 **\[Important\]** Updated license from the MIT license to the Apache 2.0 license due to the use of the Wikipedia pre-processing code from [cl-tohoku/bert-japanese](https://github.com/cl-tohoku/bert-japanese). See [issue](https://github.com/rinnakk/japanese-pretrained-models/issues/1) for details.
+* 2021/09/13 Added tips on using `position_ids` with `japanese-roberta-base`. Refer to [issue 3](https://github.com/rinnakk/japanese-pretrained-models/issues/3) for details.
+
+* 2021/08/26 **\[Important\]** Updated license from the MIT license to the Apache 2.0 license due to the use of the Wikipedia pre-processing code from [cl-tohoku/bert-japanese](https://github.com/cl-tohoku/bert-japanese). See [issue 1](https://github.com/rinnakk/japanese-pretrained-models/issues/1) for details.
 
 * 2021/08/23 Added Japanese Wikipedia to training corpora. Published code for training `rinna/japanese-gpt2-small`, `rinna/japanese-gpt2-xsmall`, and `rinna/japanese-roberta-base`.
 
@@ -81,11 +83,16 @@ token_ids = tokenizer.convert_tokens_to_ids(tokens)
 print(token_ids)  # output: [4, 1602, 44, 24, 368, 6, 11, 21583, 8]
 
 # convert to tensor
-token_tensor = torch.tensor([token_ids])
+token_tensor = torch.LongTensor([token_ids])
+
+# provide position ids explicitly
+position_ids = list(range(0, token_tensor.size(1)))
+print(position_ids)  # output: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+position_id_tensor = torch.LongTensor([position_ids])
 
 # get the top 10 predictions of the masked token
 with torch.no_grad():
-    outputs = model(token_tensor)
+    outputs = model(input_ids=token_tensor, position_ids=position_id_tensor)
     predictions = outputs[0][0, masked_idx].topk(10)
 
 for i, index_t in enumerate(predictions.indices):
@@ -94,16 +101,16 @@ for i, index_t in enumerate(predictions.indices):
     print(i, token)
 
 """
-0 ワールドカップ
-1 フェスティバル
-2 オリンピック
-3 サミット
-4 東京オリンピック
-5 総会
+0 総会
+1 サミット
+2 ワールドカップ
+3 フェスティバル
+4 大会
+5 オリンピック
 6 全国大会
-7 イベント
-8 世界選手権
-9 パーティー
+7 党大会
+8 イベント
+9 世界選手権
 """
 ~~~
 

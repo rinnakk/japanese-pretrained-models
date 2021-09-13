@@ -9,6 +9,15 @@ This repository provides the code for training Japanese pretrained models. This 
 
 Currently supported pretrained models include: [GPT-2](https://d4mucfpksywv.cloudfront.net/better-language-models/language-models.pdf), [RoBERTa](https://arxiv.org/pdf/1907.11692.pdf).
 
+| Table of Contents |
+|-|
+| [Update log](#update-log) |
+| [Use tips](#use-tips) |
+| [Use our pretrained models via Huggingface](#use-our-pretrained-models-via-huggingface) |
+| [Train `japanese-gpt2-xsmall` from scratch](#train-japanese-gpt2-xsmall-from-scratch) |
+| [Train `japanese-roberta-base` from scratch](#train-japanese-roberta-base-from-scratch) |
+| [License](#license) |
+
 ---
 
 **Please open an issue (in English/日本語) if you encounter any problem using the code or using our models via Huggingface.**
@@ -30,6 +39,18 @@ Currently supported pretrained models include: [GPT-2](https://d4mucfpksywv.clou
 * 2021/05/04 Fixed random seeding bug for Multi-GPU training.
 
 * 2021/04/06 Published code for training `rinna/japanese-gpt2-medium`.
+
+---
+
+## Use tips
+
+### Tips for `rinna/japanese-roberta-base`
+
+* Use `[CLS]`: To predict a masked token, be sure to add a `[CLS]` token before the sentence for the model to correctly encode it, as it is used during the model training.
+
+* Use `[MASK]` after tokenization: A) Directly typing `[MASK]` in an input string and B) replacing a token with `[MASK]` after tokenization will yield different token sequences, and thus different prediction results. It is more appropriate to use `[MASK]` after tokenization (as it is consistent with how the model was pretrained). However, the Huggingface Inference API only supports typing `[MASK]` in the input string and produces less robust predictions.
+
+* Provide `position_ids` as an argument explicitly: When `position_ids` are not provided for a `Roberta*` model, Huggingface's `transformers` will automatically construct it but start from `padding_idx` instead of `0` (see [issue](https://github.com/rinnakk/japanese-pretrained-models/issues/3) and function `create_position_ids_from_input_ids()` in Huggingface's [implementation](https://github.com/huggingface/transformers/blob/master/src/transformers/models/roberta/modeling_roberta.py)), which unfortunately does not work as expected with `rinna/japanese-roberta-base` since the `padding_idx` of the corresponding tokenizer is not `0`. So please be sure to constrcut the `position_ids` by yourself and make it start from position id `0`.
 
 ---
 

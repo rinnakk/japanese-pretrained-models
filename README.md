@@ -26,6 +26,8 @@ Currently supported pretrained models include: [GPT-2](https://d4mucfpksywv.clou
 
 ## Update log
 
+* 2021/11/01 Updated corpora links.
+
 * 2021/09/13 Added tips on using `position_ids` with `japanese-roberta-base`. Refer to [issue 3](https://github.com/rinnakk/japanese-pretrained-models/issues/3) for details.
 
 * 2021/08/26 **\[Important\]** Updated license from the MIT license to the Apache 2.0 license due to the use of the Wikipedia pre-processing code from [cl-tohoku/bert-japanese](https://github.com/cl-tohoku/bert-japanese). See [issue 1](https://github.com/rinnakk/japanese-pretrained-models/issues/1) for details.
@@ -154,7 +156,7 @@ pip install -r requirements.txt
 python -m unidic download
 ~~~
 
-2. Download training corpus [Japanese CC-100](http://data.statmt.org/cc-100/ja.txt.xz) and extract the `ja.txt` file.
+2. Download training corpus [Japanese CC-100](http://data.statmt.org/cc-100/) and extract the `ja.txt` file.
 
 3. Move the `ja.txt` file or modify `src/corpus/jp_cc100/config.py` to match the filepath of `ja.txt` with `self.raw_data_dir` in the config file.
 

@@ -22,9 +22,25 @@ Currently supported pretrained models include: [GPT-2](https://d4mucfpksywv.clou
 
 **Please open an issue (in English/日本語) if you encounter any problem using the code or using our models via Huggingface.**
 
+if you find this work useful, please cite the following paper:
+
+~~~
+@article{rinna_pretrained2021,
+    title={日本語自然言語処理における事前学習モデルの公開},
+    author={趙 天雨 and 沢田 慶},
+    journal={人工知能学会研究会資料 言語・音声理解と対話処理研究会},
+    volume={93},
+    pages={169-170},
+    year={2021},
+    doi={10.11517/jsaislud.93.0_169}
+}
+~~~
+
 ---
 
 ## Update log
+
+* 2022/01/17 Updated citation information.
 
 * 2021/11/01 Updated corpora links.
 

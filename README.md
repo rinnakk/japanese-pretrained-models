@@ -40,6 +40,8 @@ if you find this work useful, please cite the following paper:
 
 ## Update log
 
+* 2022/01/25 Updated link to `rinna/japanese-gpt-1b` in the model summary table.
+ 
 * 2022/01/17 Updated citation information.
 
 * 2021/11/01 Updated corpora links.
@@ -78,6 +80,7 @@ if you find this work useful, please cite the following paper:
 
 | language model | # params | # layers | # emb dim | # epochs | dev ppl | training time\* |
 |-|-|-|-|-|-|-|
+| [rinna/japanese-gpt-1b](https://huggingface.co/rinna/japanese-gpt-1b) | 1.3B | 24 | 2048 | 10+ | 13.9 | n/a\*\* |
 | [rinna/japanese-gpt2-medium](https://huggingface.co/rinna/japanese-gpt2-medium) | 336M | 24 | 1024 | 4 | 18 | 45 days |
 | [rinna/japanese-gpt2-small](https://huggingface.co/rinna/japanese-gpt2-small) | 110M | 12 | 768 | 3 | 21 | 15 days |
 | [rinna/japanese-gpt2-xsmall](https://huggingface.co/rinna/japanese-gpt2-xsmall) | 37M | 6 | 512 | 3 | 28 | 4 days |
@@ -87,6 +90,8 @@ if you find this work useful, please cite the following paper:
 | [rinna/japanese-roberta-base](https://huggingface.co/rinna/japanese-roberta-base) | 110M | 12 | 768 | 8 | 3.9 | 15 days |
 
 *\* Training was conducted on a 8x V100 32GB machine.*
+
+*\*\* Training was conducted using a different codebase and a different computing environment.*
 
 ### Example: use `rinna/japanese-roberta-base` for predicting masked token
 

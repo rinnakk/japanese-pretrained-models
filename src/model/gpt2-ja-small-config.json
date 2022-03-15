@@ -28,5 +28,6 @@
         "max_length": 50
       }
     },
+    "tokenizer_class": "T5Tokenizer",
     "vocab_size": 32000
 }

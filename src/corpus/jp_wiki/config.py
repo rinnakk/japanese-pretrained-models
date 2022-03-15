@@ -18,7 +18,7 @@ class Config(object):
         self.corpus_name = "jp_wiki"
 
         # Management
-        self.download_link = "https://dumps.wikimedia.org/other/cirrussearch/current/jawiki-20211025-cirrussearch-content.json.gz"
+        self.download_link = "https://dumps.wikimedia.org/other/cirrussearch/xxxxxxxx/jawiki-xxxxxxxx-cirrussearch-content.json.gz"
         self.raw_data_dir = "../data/jp_wiki/raw_data"
         self.raw_data_path = f"{self.raw_data_dir}/wiki.json.gz"
         self.extracted_data_path = f"{self.raw_data_dir}/wiki.extracted.txt"

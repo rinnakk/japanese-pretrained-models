@@ -187,7 +187,7 @@ cd src/
 python -m corpus.jp_cc100.split_to_small_files
 ~~~~
 
-5. Download training corpus Japanese Wikipedia by running:
+5. First check the versions of Wikipedia dump at [Wikipedia cirrussearch](https://dumps.wikimedia.org/other/cirrussearch/) and fill in `self.download_link` (in file `src/corpus/jp_wiki/config.py`) with the link to your preferred Wikipedia dump version. Then download training corpus Japanese Wikipedia by running:
 ~~~
 python -m corpus.jp_wiki.build_pretrain_dataset
 ~~~

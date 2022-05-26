@@ -187,9 +187,10 @@ cd src/
 python -m corpus.jp_cc100.split_to_small_files
 ~~~~
 
-5. First check the versions of Wikipedia dump at [Wikipedia cirrussearch](https://dumps.wikimedia.org/other/cirrussearch/) and fill in `self.download_link` (in file `src/corpus/jp_wiki/config.py`) with the link to your preferred Wikipedia dump version. Then download training corpus Japanese Wikipedia by running:
+5. First check the versions of Wikipedia dump at [Wikipedia cirrussearch](https://dumps.wikimedia.org/other/cirrussearch/) and fill in `self.download_link` (in file `src/corpus/jp_wiki/config.py`) with the link to your preferred Wikipedia dump version. Then download training corpus Japanese Wikipedia and split it by running:
 ~~~
 python -m corpus.jp_wiki.build_pretrain_dataset
+python -m corpus.jp_wiki.split_to_small_files
 ~~~
 
 6. Train a xsmall-sized GPT-2 on, for example, 4 V100 GPUs by running:

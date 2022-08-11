@@ -38,8 +38,6 @@ if __name__ == "__main__":
         bos_token="<s>",
         eos_token="</s>",
         unk_token="<unk>",
-        extra_ids=0,
-        additional_special_tokens=(),
         workaround_for_add_dummy_prefix=True
     )
     tokenizer.save_pretrained(args.save_dir)

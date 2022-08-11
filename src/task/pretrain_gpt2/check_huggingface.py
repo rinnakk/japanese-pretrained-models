@@ -17,8 +17,7 @@ import argparse
 import random
 
 import torch.cuda.amp as amp
-from transformers import AutoModelForCausalLM, TFAutoModelForCausalLM
-from transformers import T5Tokenizer
+from transformers import AutoTokenizer, AutoModelForCausalLM, TFAutoModelForCausalLM
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -27,9 +26,9 @@ if __name__ == "__main__":
 
     random.seed(42)
 
-    tokenizer = T5Tokenizer.from_pretrained(args.model_dir, extra_ids=0)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_dir)
     print(len(tokenizer))
-    
+
     pt_model = AutoModelForCausalLM.from_pretrained(args.model_dir)
     tf_model = TFAutoModelForCausalLM.from_pretrained(args.model_dir)
 
@@ -68,4 +67,3 @@ if __name__ == "__main__":
         generated = output_sequences.numpy().tolist()[0]
         generated = tokenizer.decode(generated)
         print("tensorflow:", generated)
-

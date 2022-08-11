@@ -21,7 +21,7 @@ import numpy as np
 import torch
 import torch.cuda.amp as amp
 from transformers import GPT2LMHeadModel, GPT2Config
-from transformers import T5Tokenizer
+from tokenization_gpt2_japanese import GPT2JapaneseTokenizer
 
 
 def str2bool(v):
@@ -38,18 +38,12 @@ def interact(config):
     print("Using", DEVICE)
 
     # build tokenizer
-    tokenizer = T5Tokenizer(
+    tokenizer = GPT2JapaneseTokenizer(
         vocab_file="../data/tokenizer/google_sp.model",
         bos_token="<s>",
         eos_token="</s>",
         unk_token="<unk>",
-        pad_token="[PAD]",
-        cls_token="[CLS]",
-        sep_token="[SEP]",
-        mask_token="[MASK]",
-        extra_ids=0,
-        additional_special_tokens=(),
-        do_lower_case=True
+        workaround_for_add_dummy_prefix=True
     )
 
     # build model
@@ -98,12 +92,12 @@ def interact(config):
                     pad_token_id=tokenizer.pad_token_id,
                     num_return_sequences=1
                 )
-            
+
             # convert model outputs to readable sentence
             generated_sequence = output_sequences.tolist()[0][len(prompt_token_ids):]
             generated_tokens = tokenizer.convert_ids_to_tokens(generated_sequence)
             generated_text = tokenizer.convert_tokens_to_string(generated_tokens)
-            
+
             end_time = time.time()
 
             # display generated response
@@ -131,7 +125,7 @@ if __name__ == "__main__":
     parser.add_argument("--do_sample", type=str2bool, default=True)
     parser.add_argument("--use_gpu", type=str2bool, default=True, help="use gpu or not")
     parser.add_argument("--checkpoint_path", help="path to saved checkpoint file")
-    
+
     config = parser.parse_args()
 
     # set random seeds

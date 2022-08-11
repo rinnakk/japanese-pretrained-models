@@ -37,7 +37,7 @@ PRETRAINED_VOCAB_FILES_MAP = {
         "rinna/japanese-gpt2-xsmall": "https://huggingface.co/rinna/japanese-gpt2-xsmall/resolve/main/spiece.model",
         "rinna/japanese-gpt2-small": "https://huggingface.co/rinna/japanese-gpt2-small/resolve/main/spiece.model",
         "rinna/japanese-gpt2-medium": "https://huggingface.co/rinna/japanese-gpt2-medium/resolve/main/spiece.model",
-        "rinna/japanese-gpt2-1b": "https://huggingface.co/rinna/japanese-gpt2-1b/resolve/main/spiece.model",
+        "rinna/japanese-gpt-1b": "https://huggingface.co/rinna/japanese-gpt-1b/resolve/main/spiece.model",
     }
 }
 
@@ -47,7 +47,7 @@ PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES = {
     "rinna/japanese-gpt2-xsmall": 1024,
     "rinna/japanese-gpt2-small": 1024,
     "rinna/japanese-gpt2-medium": 1024,
-    "rinna/japanese-gpt2-1b": 1024,
+    "rinna/japanese-gpt-1b": 1024,
 }
 
 

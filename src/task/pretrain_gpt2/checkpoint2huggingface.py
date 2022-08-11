@@ -31,6 +31,8 @@ if __name__ == "__main__":
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
 
+    GPT2JapaneseTokenizer.register_for_auto_class()
+
     tokenizer = GPT2JapaneseTokenizer(
         vocab_file="../data/tokenizer/google_sp.model",
         bos_token="<s>",

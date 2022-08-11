@@ -33,6 +33,9 @@ if __name__ == "__main__":
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
 
+    RobertaJapaneseTokenizer.register_for_auto_class()
+    RobertaJapaneseForMaskedLM.register_for_auto_class("AutoModelForMaskedLM")
+
     tokenizer = RobertaJapaneseTokenizer(
         vocab_file="../data/tokenizer/google_sp.model",
         bos_token="<s>",

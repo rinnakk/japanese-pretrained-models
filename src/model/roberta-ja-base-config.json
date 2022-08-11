@@ -2,22 +2,6 @@
     "architectures": [
       "RobertaJapaneseForMaskedLM"
     ],
-    "auto_map": {
-      "AutoModel": "modeling_roberta_japanese.RobertaJapaneseModel",
-      "AutoModelForCausalLM": "modeling_roberta_japanese.RobertaJapaneseForCausalLM",
-      "AutoModelForMaskedLM": "modeling_roberta_japanese.RobertaJapaneseForMaskedLM",
-      "AutoModelForSequenceClassification": "modeling_roberta_japanese.RobertaJapaneseForSequenceClassification",
-      "AutoModelForMultipleChoice": "modeling_roberta_japanese.RobertaJapaneseForMultipleChoice",
-      "AutoModelForTokenClassification": "modeling_roberta_japanese.RobertaJapaneseForTokenClassification",
-      "AutoModelForQuestionAnswering": "modeling_roberta_japanese.RobertaJapaneseForQuestionAnswering",
-      "TFAutoModel": "modeling_tf_roberta_japanese.TFRobertaJapaneseModel",
-      "TFAutoModelForCausalLM": "modeling_tf_roberta_japanese.TFRobertaJapaneseForCausalLM",
-      "TFAutoModelForMaskedLM": "modeling_tf_roberta_japanese.TFRobertaJapaneseForMaskedLM",
-      "TFAutoModelForSequenceClassification": "modeling_tf_roberta_japanese.TFRobertaJapaneseForSequenceClassification",
-      "TFAutoModelForMultipleChoice": "modeling_tf_roberta_japanese.TFRobertaJapaneseForMultipleChoice",
-      "TFAutoModelForTokenClassification": "modeling_tf_roberta_japanese.TFRobertaJapaneseForTokenClassification",
-      "TFAutoModelForQuestionAnswering": "modeling_tf_roberta_japanese.TFRobertaJapaneseForQuestionAnswering"
-    },
     "attention_probs_dropout_prob": 0.1,
     "bos_token_id": 1,
     "eos_token_id": 2,

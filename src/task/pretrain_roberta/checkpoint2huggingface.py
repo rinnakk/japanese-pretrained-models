@@ -49,6 +49,7 @@ if __name__ == "__main__":
         mask_token="[MASK]",
         extra_ids=0,
         additional_special_tokens=(),
+        do_lower_case=True,
         workaround_for_add_dummy_prefix=True
     )
     tokenizer.save_pretrained(args.save_dir)

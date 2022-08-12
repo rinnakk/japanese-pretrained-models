@@ -18,9 +18,9 @@ import os
 
 import torch
 from transformers import PretrainedConfig
-from tokenization_roberta_japanese import RobertaJapaneseTokenizer
-from modeling_roberta_japanese import RobertaJapaneseForMaskedLM
-from modeling_tf_roberta_japanese import TFRobertaJapaneseForMaskedLM
+from task.pretrain_roberta.tokenization_roberta_japanese import RobertaJapaneseTokenizer
+from task.pretrain_roberta.modeling_roberta_japanese import RobertaJapaneseForMaskedLM
+from task.pretrain_roberta.modeling_tf_roberta_japanese import TFRobertaJapaneseForMaskedLM
 
 
 if __name__ == "__main__":
@@ -35,6 +35,8 @@ if __name__ == "__main__":
 
     RobertaJapaneseTokenizer.register_for_auto_class()
     RobertaJapaneseForMaskedLM.register_for_auto_class("AutoModelForMaskedLM")
+    # TFRobertaJapaneseForMaskedLM.register_for_auto_class("TFAutoModelForMaskedLM")
+    # Waiting for: https://github.com/huggingface/transformers/pull/18607
 
     tokenizer = RobertaJapaneseTokenizer(
         vocab_file="../data/tokenizer/google_sp.model",

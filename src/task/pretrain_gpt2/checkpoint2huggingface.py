@@ -18,7 +18,7 @@ import os
 
 import torch
 from transformers import GPT2LMHeadModel, GPT2Config, TFGPT2LMHeadModel
-from tokenization_gpt2_japanese import GPT2JapaneseTokenizer
+from task.pretrain_gpt2.tokenization_gpt2_japanese import GPT2JapaneseTokenizer
 
 
 if __name__ == "__main__":

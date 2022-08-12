@@ -118,7 +118,6 @@ class GPT2JapaneseTokenizer(PreTrainedTokenizer):
 
         self.vocab_file = vocab_file
         self.workaround_for_add_dummy_prefix = workaround_for_add_dummy_prefix
-        self._auto_map = {"AutoTokenizer": ["tokenization_gpt2_japanese.GPT2JapaneseTokenizer", None]}
 
         if self.workaround_for_add_dummy_prefix:
             self.workarounded_sp_model = spm.SentencePieceProcessor(**self.sp_model_kwargs)

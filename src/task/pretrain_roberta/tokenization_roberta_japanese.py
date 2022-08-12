@@ -167,7 +167,6 @@ class RobertaJapaneseTokenizer(PreTrainedTokenizer):
         self.vocab_file = vocab_file
         self._extra_ids = extra_ids
         self.workaround_for_add_dummy_prefix = workaround_for_add_dummy_prefix
-        self._auto_map = {"AutoTokenizer": ["tokenization_roberta_japanese.RobertaJapaneseTokenizer", None]}
 
         if self.workaround_for_add_dummy_prefix:
             self.workarounded_sp_model = spm.SentencePieceProcessor(**self.sp_model_kwargs)

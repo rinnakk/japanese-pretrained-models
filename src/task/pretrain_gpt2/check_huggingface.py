@@ -26,11 +26,11 @@ if __name__ == "__main__":
 
     random.seed(42)
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model_dir)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_dir, trust_remote_code=True)
     print(len(tokenizer))
 
-    pt_model = AutoModelForCausalLM.from_pretrained(args.model_dir)
-    tf_model = TFAutoModelForCausalLM.from_pretrained(args.model_dir)
+    pt_model = AutoModelForCausalLM.from_pretrained(args.model_dir, trust_remote_code=True)
+    tf_model = TFAutoModelForCausalLM.from_pretrained(args.model_dir, trust_remote_code=True)
 
     prompt = "誰も到達していないArtificial Intelligenceの高みへ、ともに"
     with amp.autocast():

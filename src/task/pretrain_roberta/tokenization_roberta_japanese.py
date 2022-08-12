@@ -105,7 +105,9 @@ class RobertaJapaneseTokenizer(PreTrainedTokenizer):
 
             - `alpha`: Smoothing parameter for unigram sampling, and dropout probability of merge operations for
               BPE-dropout.
-        workaround_for_add_dummy_prefix (`bool`, *optional*, defaults to `False`):
+        do_lower_case (`bool`, *optional*, defaults to `True`):
+            Whether or not to lowercase the input when tokenizing.
+        workaround_for_add_dummy_prefix (`bool`, *optional*, defaults to `True`):
             If you have unfortunately pre-trained your model with `add_dummy_prefix` set to true, this is the workaround.
 
     Attributes:
@@ -131,7 +133,8 @@ class RobertaJapaneseTokenizer(PreTrainedTokenizer):
         extra_ids=100,
         additional_special_tokens=None,
         sp_model_kwargs: Optional[Dict[str, Any]] = None,
-        workaround_for_add_dummy_prefix=False,
+        do_lower_case=True,
+        workaround_for_add_dummy_prefix=True,
         **kwargs
     ) -> None:
         # Add extra_ids to the special token list
@@ -160,12 +163,14 @@ class RobertaJapaneseTokenizer(PreTrainedTokenizer):
             extra_ids=extra_ids,
             additional_special_tokens=additional_special_tokens,
             sp_model_kwargs=self.sp_model_kwargs,
+            do_lower_case=do_lower_case,
             workaround_for_add_dummy_prefix=workaround_for_add_dummy_prefix,
             **kwargs,
         )
 
         self.vocab_file = vocab_file
         self._extra_ids = extra_ids
+        self.do_lower_case = do_lower_case
         self.workaround_for_add_dummy_prefix = workaround_for_add_dummy_prefix
 
         if self.workaround_for_add_dummy_prefix:

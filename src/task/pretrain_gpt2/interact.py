@@ -21,7 +21,7 @@ import numpy as np
 import torch
 import torch.cuda.amp as amp
 from transformers import GPT2LMHeadModel, GPT2Config
-from tokenization_gpt2_japanese import GPT2JapaneseTokenizer
+from task.pretrain_gpt2.tokenization_gpt2_japanese import GPT2JapaneseTokenizer
 
 
 def str2bool(v):
@@ -43,6 +43,7 @@ def interact(config):
         bos_token="<s>",
         eos_token="</s>",
         unk_token="<unk>",
+        do_lower_case=True,
         workaround_for_add_dummy_prefix=True
     )
 

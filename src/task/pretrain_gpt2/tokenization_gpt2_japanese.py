@@ -82,7 +82,9 @@ class GPT2JapaneseTokenizer(PreTrainedTokenizer):
 
             - `alpha`: Smoothing parameter for unigram sampling, and dropout probability of merge operations for
               BPE-dropout.
-        workaround_for_add_dummy_prefix (`bool`, *optional*, defaults to `False`):
+        do_lower_case (`bool`, *optional*, defaults to `True`):
+            Whether or not to lowercase the input when tokenizing.
+        workaround_for_add_dummy_prefix (`bool`, *optional*, defaults to `True`):
             If you have unfortunately pre-trained your model with `add_dummy_prefix` set to true, this is the workaround.
 
     Attributes:
@@ -102,7 +104,8 @@ class GPT2JapaneseTokenizer(PreTrainedTokenizer):
         eos_token="</s>",
         unk_token="<unk>",
         sp_model_kwargs: Optional[Dict[str, Any]] = None,
-        workaround_for_add_dummy_prefix=False,
+        do_lower_case=True,
+        workaround_for_add_dummy_prefix=True,
         **kwargs
     ) -> None:
         self.sp_model_kwargs = {} if sp_model_kwargs is None else sp_model_kwargs
@@ -112,11 +115,13 @@ class GPT2JapaneseTokenizer(PreTrainedTokenizer):
             eos_token=eos_token,
             unk_token=unk_token,
             sp_model_kwargs=self.sp_model_kwargs,
+            do_lower_case=do_lower_case,
             workaround_for_add_dummy_prefix=workaround_for_add_dummy_prefix,
             **kwargs,
         )
 
         self.vocab_file = vocab_file
+        self.do_lower_case = do_lower_case
         self.workaround_for_add_dummy_prefix = workaround_for_add_dummy_prefix
 
         if self.workaround_for_add_dummy_prefix:
@@ -130,7 +135,7 @@ class GPT2JapaneseTokenizer(PreTrainedTokenizer):
 
     @property
     def vocab_size(self):
-        return self.sp_model.get_piece_size() + self._extra_ids
+        return self.sp_model.get_piece_size()
 
     def get_vocab(self):
         vocab = {self.convert_ids_to_tokens(i): i for i in range(self.vocab_size)}
@@ -156,6 +161,8 @@ class GPT2JapaneseTokenizer(PreTrainedTokenizer):
         Returns:
             `List[int]`: List of [input IDs](../glossary#input-ids) with the appropriate special tokens.
         """
+        if token_ids_1 is None:
+            return token_ids_0
         return token_ids_0 + token_ids_1
 
     def __getstate__(self):
@@ -187,19 +194,11 @@ class GPT2JapaneseTokenizer(PreTrainedTokenizer):
 
     def _convert_token_to_id(self, token):
         """Converts a token (str) in an id using the vocab."""
-        if token.startswith("<extra_id_"):
-            match = re.match(r"<extra_id_(\d+)>", token)
-            num = int(match.group(1))
-            return self.vocab_size - num - 1
         return self.sp_model.piece_to_id(token)
 
     def _convert_id_to_token(self, index):
         """Converts an index (integer) in a token (str) using the vocab."""
-        if index < self.sp_model.get_piece_size():
-            token = self.sp_model.IdToPiece(index)
-        else:
-            token = f"<extra_id_{self.vocab_size - 1 - index}>"
-        return token
+        return self.sp_model.IdToPiece(index)
 
     def convert_tokens_to_string(self, tokens):
         """Converts a sequence of tokens (string) in a single string."""

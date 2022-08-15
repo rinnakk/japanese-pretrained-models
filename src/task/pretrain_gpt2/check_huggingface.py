@@ -17,7 +17,8 @@ import argparse
 import random
 
 import torch.cuda.amp as amp
-from transformers import AutoTokenizer, AutoModelForCausalLM, TFAutoModelForCausalLM
+from transformers import AutoModelForCausalLM, TFAutoModelForCausalLM
+from transformers import AutoTokenizer
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -29,8 +30,8 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(args.model_dir, trust_remote_code=True)
     print(len(tokenizer))
 
-    pt_model = AutoModelForCausalLM.from_pretrained(args.model_dir, trust_remote_code=True)
-    tf_model = TFAutoModelForCausalLM.from_pretrained(args.model_dir, trust_remote_code=True)
+    pt_model = AutoModelForCausalLM.from_pretrained(args.model_dir)
+    tf_model = TFAutoModelForCausalLM.from_pretrained(args.model_dir)
 
     prompt = "誰も到達していないArtificial Intelligenceの高みへ、ともに"
     with amp.autocast():

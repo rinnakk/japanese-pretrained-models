@@ -17,10 +17,10 @@ import argparse
 import os
 
 import torch
-from transformers import PretrainedConfig
-from task.pretrain_roberta.tokenization_roberta_japanese import RobertaJapaneseTokenizer
 from task.pretrain_roberta.modeling_roberta_japanese import RobertaJapaneseForMaskedLM
+from transformers import PretrainedConfig
 from task.pretrain_roberta.modeling_tf_roberta_japanese import TFRobertaJapaneseForMaskedLM
+from task.pretrain_roberta.tokenization_roberta_japanese import RobertaJapaneseTokenizer
 
 
 if __name__ == "__main__":

@@ -38,8 +38,7 @@ if __name__ == "__main__":
         bos_token="<s>",
         eos_token="</s>",
         unk_token="<unk>",
-        do_lower_case=True,
-        workaround_for_add_dummy_prefix=True
+        do_lower_case=True
     )
     tokenizer.save_pretrained(args.save_dir)
     tokenizer.save_vocabulary(args.save_dir)

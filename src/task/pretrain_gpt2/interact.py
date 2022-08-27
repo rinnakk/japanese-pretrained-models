@@ -43,8 +43,7 @@ def interact(config):
         bos_token="<s>",
         eos_token="</s>",
         unk_token="<unk>",
-        do_lower_case=True,
-        workaround_for_add_dummy_prefix=True
+        do_lower_case=True
     )
 
     # build model

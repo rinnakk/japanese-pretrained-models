@@ -107,8 +107,6 @@ class RobertaJapaneseTokenizer(PreTrainedTokenizer):
               BPE-dropout.
         do_lower_case (`bool`, *optional*, defaults to `True`):
             Whether or not to lowercase the input when tokenizing.
-        workaround_for_add_dummy_prefix (`bool`, *optional*, defaults to `True`):
-            If you have unfortunately pre-trained your model with `add_dummy_prefix` set to true, this is the workaround.
 
     Attributes:
         sp_model (`SentencePieceProcessor`):
@@ -134,7 +132,6 @@ class RobertaJapaneseTokenizer(PreTrainedTokenizer):
         additional_special_tokens=None,
         sp_model_kwargs: Optional[Dict[str, Any]] = None,
         do_lower_case=True,
-        workaround_for_add_dummy_prefix=True,
         **kwargs
     ) -> None:
         # Add extra_ids to the special token list
@@ -164,21 +161,13 @@ class RobertaJapaneseTokenizer(PreTrainedTokenizer):
             additional_special_tokens=additional_special_tokens,
             sp_model_kwargs=self.sp_model_kwargs,
             do_lower_case=do_lower_case,
-            workaround_for_add_dummy_prefix=workaround_for_add_dummy_prefix,
             **kwargs,
         )
 
         self.vocab_file = vocab_file
         self._extra_ids = extra_ids
         self.do_lower_case = do_lower_case
-        self.workaround_for_add_dummy_prefix = workaround_for_add_dummy_prefix
 
-        if self.workaround_for_add_dummy_prefix:
-            self.workarounded_sp_model = spm.SentencePieceProcessor(**self.sp_model_kwargs)
-            m = spmproto.ModelProto()
-            m.ParseFromString(open(vocab_file, "rb").read())
-            m.normalizer_spec.add_dummy_prefix = False
-            self.workarounded_sp_model.LoadFromSerializedProto(m.SerializeToString())
         self.sp_model = spm.SentencePieceProcessor(**self.sp_model_kwargs)
         self.sp_model.Load(vocab_file)
 
@@ -278,19 +267,11 @@ class RobertaJapaneseTokenizer(PreTrainedTokenizer):
         if not hasattr(self, "sp_model_kwargs"):
             self.sp_model_kwargs = {}
 
-        if self.workaround_for_add_dummy_prefix:
-            self.workarounded_sp_model = spm.SentencePieceProcessor(**self.sp_model_kwargs)
-            m = spmproto.ModelProto()
-            m.ParseFromString(open(self.vocab_file, "rb").read())
-            m.normalizer_spec.add_dummy_prefix = False
-            self.workarounded_sp_model.LoadFromSerializedProto(m.SerializeToString())
         self.sp_model = spm.SentencePieceProcessor(**self.sp_model_kwargs)
         self.sp_model.Load(self.vocab_file)
 
     def _tokenize(self, text: str) -> List[str]:
         """Take as input a string and return a list of strings (tokens) for words/sub-words"""
-        if self.workaround_for_add_dummy_prefix:
-            return self.workarounded_sp_model.encode(text, out_type=str)
         return self.sp_model.encode(text, out_type=str)
 
     def _convert_token_to_id(self, token):
